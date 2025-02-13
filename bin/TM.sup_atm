@@ -1,0 +1,19 @@
+load inline
+select all
+cartoon
+select *A
+color blue
+select *B
+color red
+select ligand
+wireframe 0.25
+select solvent
+spacefill 0.25
+select all
+exit
+REMARK TM-align
+REMARK Chain 1:/data/foldseek_database/sp_cif_file/swissprot_cif_v4_files/AF-B2VGX5-F1-model_v4.cif Size= 150
+REMARK Chain 2:/data/foldseek_database/sp_cif_file/swissprot_cif_v4_files/AF-A4QJT7-F1-model_v4.cif Size= 225 (TM-score is normalized by  225, d0=  5.57)
+REMARK Aligned length= 118, RMSD=  3.44, TM-score=0.40850, ID=0.085
+TER
+TER

@@ -1,0 +1,213 @@
+load inline
+select *A
+wireframe .45
+select *B
+wireframe .20
+select all
+color white
+select    3:A,  29:B
+color red
+select    5:A,  32:B
+color red
+select    6:A,  33:B
+color red
+select    7:A,  34:B
+color red
+select    8:A,  35:B
+color red
+select    9:A,  36:B
+color red
+select   10:A,  38:B
+color red
+select   11:A,  39:B
+color red
+select   12:A,  40:B
+color red
+select   13:A,  41:B
+color red
+select   18:A,  46:B
+color red
+select   31:A,  48:B
+color red
+select   32:A,  49:B
+color red
+select   33:A,  50:B
+color red
+select   34:A,  51:B
+color red
+select   35:A,  52:B
+color red
+select   36:A,  53:B
+color red
+select   37:A,  56:B
+color red
+select   39:A,  58:B
+color red
+select   42:A,  61:B
+color red
+select   48:A,  62:B
+color red
+select   49:A,  63:B
+color red
+select   50:A,  64:B
+color red
+select   51:A,  65:B
+color red
+select   52:A,  66:B
+color red
+select   63:A,  68:B
+color red
+select   64:A,  69:B
+color red
+select   65:A,  70:B
+color red
+select   66:A,  71:B
+color red
+select   67:A,  72:B
+color red
+select   71:A,  73:B
+color red
+select   74:A,  74:B
+color red
+select   75:A,  75:B
+color red
+select   76:A,  76:B
+color red
+select   77:A,  77:B
+color red
+select   78:A,  78:B
+color red
+select   79:A,  79:B
+color red
+select   80:A,  80:B
+color red
+select   82:A,  81:B
+color red
+select   83:A,  82:B
+color red
+select   84:A,  85:B
+color red
+select   85:A,  86:B
+color red
+select   86:A,  87:B
+color red
+select   87:A,  88:B
+color red
+select   88:A,  89:B
+color red
+select   89:A,  90:B
+color red
+select   90:A,  91:B
+color red
+select   91:A,  92:B
+color red
+select   92:A,  93:B
+color red
+select   93:A,  94:B
+color red
+select   94:A,  95:B
+color red
+select   95:A,  96:B
+color red
+select   96:A,  98:B
+color red
+select   97:A, 100:B
+color red
+select   98:A, 101:B
+color red
+select   99:A, 102:B
+color red
+select  100:A, 103:B
+color red
+select  101:A, 104:B
+color red
+select  102:A, 105:B
+color red
+select  103:A, 106:B
+color red
+select  107:A, 112:B
+color red
+select  108:A, 113:B
+color red
+select  109:A, 114:B
+color red
+select  110:A, 115:B
+color red
+select  112:A, 119:B
+color red
+select  113:A, 121:B
+color red
+select  114:A, 122:B
+color red
+select  116:A, 124:B
+color red
+select  117:A, 125:B
+color red
+select  119:A, 126:B
+color red
+select  120:A, 127:B
+color red
+select  121:A, 128:B
+color red
+select  122:A, 131:B
+color red
+select  123:A, 132:B
+color red
+select  124:A, 133:B
+color red
+select  125:A, 134:B
+color red
+select  126:A, 135:B
+color red
+select  127:A, 136:B
+color red
+select  128:A, 137:B
+color red
+select  129:A, 138:B
+color red
+select  131:A, 141:B
+color red
+select  132:A, 142:B
+color red
+select  133:A, 144:B
+color red
+select  134:A, 145:B
+color red
+select  135:A, 146:B
+color red
+select  136:A, 147:B
+color red
+select  137:A, 148:B
+color red
+select  138:A, 149:B
+color red
+select  139:A, 150:B
+color red
+select  140:A, 151:B
+color red
+select  141:A, 152:B
+color red
+select  142:A, 153:B
+color red
+select  143:A, 154:B
+color red
+select  144:A, 155:B
+color red
+select  145:A, 156:B
+color red
+select  146:A, 157:B
+color red
+select  147:A, 158:B
+color red
+select  148:A, 159:B
+color red
+select  149:A, 160:B
+color red
+select all
+exit
+REMARK TM-align
+REMARK Chain 1:/data/foldseek_database/sp_cif_file/swissprot_cif_v4_files/AF-B2VGX5-F1-model_v4.cif Size= 150
+REMARK Chain 2:/data/foldseek_database/sp_cif_file/swissprot_cif_v4_files/AF-A4QJT7-F1-model_v4.cif Size= 225 (TM-score is normalized by  225, d0=  5.57)
+REMARK Aligned length= 118, RMSD=  3.44, TM-score=0.40850, ID=0.085
+TER
+TER
