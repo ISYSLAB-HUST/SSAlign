@@ -1,1 +1,1 @@
-将foldseek库放在此处
+将foldseek使用的库文件放在此处
