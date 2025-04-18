@@ -1,5 +1,6 @@
 from typing import Tuple, Optional
-
+from numba import jit as nb_jit
+from numba import njit
 import numpy as np
 import numba as nb
 from colorama import Fore, Style, init as colorama_init
@@ -10,7 +11,9 @@ colorama_init(autoreset=True)
 MATCH, INSERT, DELETE, SUBSTITUTE = 0, 1, 2, 3
 
 # By default, we use BLOSUM62 with affine gap penalties
-default_proteins_alphabet: str = "ARNDCQEGHILKMFPSTWYVBZX"
+# default_proteins_alphabet: str = "ARNDCQEGHILKMFPSTWYVBZX"
+default_proteins_alphabet: str = "ACDEFGHIKLMNPQRSTVWYX"
+
 default_proteins_matrix = (
         np.array(
             [
@@ -49,39 +52,69 @@ default_gap_opening: int = -4 * 5  # -20
 default_gap_extension: int = int(-0.2 * 5)  # -1
 
 # Precompute mapping arrays for substitution alphabets to speed up sequence translation
-_mapping_cache = {}
+# _mapping_cache = {}
 
+# def _get_mapping_array(alphabet: str) -> np.ndarray:
+#     """
+#     Create a mapping array from ASCII characters to their indices in the substitution alphabet.
+#     Unknown characters are mapped to the last index.
+#     This function caches the mapping arrays to avoid recomputation.
+#     """
+#     if alphabet in _mapping_cache:
+#         return _mapping_cache[alphabet]
+#
+#     mapping = np.full(256, len(alphabet) - 1, dtype=np.uint8)  # Default to last index for unknowns
+#     for idx, char in enumerate(alphabet):
+#         char_ord = ord(char)
+#         if char_ord < 256:
+#             mapping[char_ord] = idx
+#     _mapping_cache[alphabet] = mapping
+#     return mapping
 
+@nb_jit(nopython=True)
 def _get_mapping_array(alphabet: str) -> np.ndarray:
-    """
-    Create a mapping array from ASCII characters to their indices in the substitution alphabet.
-    Unknown characters are mapped to the last index.
-    This function caches the mapping arrays to avoid recomputation.
-    """
-    if alphabet in _mapping_cache:
-        return _mapping_cache[alphabet]
-
-    mapping = np.full(256, len(alphabet) - 1, dtype=np.uint8)  # Default to last index for unknowns
+    mapping = np.full(256, len(alphabet) - 1, dtype=np.uint8)
     for idx, char in enumerate(alphabet):
         char_ord = ord(char)
         if char_ord < 256:
             mapping[char_ord] = idx
-    _mapping_cache[alphabet] = mapping
     return mapping
 
 
+# @nb.njit
+# def _translate_sequence(seq: str, alphabet: str) -> np.ndarray:
+#     """
+#     Translate a sequence string into a NumPy array of indices based on the substitution alphabet.
+#     Uses a precomputed mapping array for fast translation.
+#     """
+#     mapping = _get_mapping_array(alphabet)
+#     seq_bytes = seq.encode('ascii', errors='ignore')  # Ignore non-ASCII characters
+#     seq_array = np.frombuffer(seq_bytes, dtype=np.uint8)
+#     if seq_array.size == 0:
+#         return np.array([], dtype=np.uint8)
+#     seq_encoded = mapping[seq_array]
+#     return seq_encoded
+
+
+empty_array = np.array([], dtype=np.uint8)
+
+@njit(nopython=True)
 def _translate_sequence(seq: str, alphabet: str) -> np.ndarray:
-    """
-    Translate a sequence string into a NumPy array of indices based on the substitution alphabet.
-    Uses a precomputed mapping array for fast translation.
-    """
     mapping = _get_mapping_array(alphabet)
-    seq_bytes = seq.encode('ascii', errors='ignore')  # Ignore non-ASCII characters
-    seq_array = np.frombuffer(seq_bytes, dtype=np.uint8)
+    seq_len = len(seq)
+    seq_array = np.zeros(seq_len, dtype=np.uint8)
+    for i in range(seq_len):
+        char = seq[i]
+        if 'A' <= char <= 'Z':
+            seq_array[i] = ord(char)
+        else:
+            seq_array[i] = 255  # 未知字符，根据需要定义
     if seq_array.size == 0:
-        return np.array([], dtype=np.uint8)
+        return empty_array
     seq_encoded = mapping[seq_array]
     return seq_encoded
+
+
 
 
 @nb.njit(fastmath=True, boundscheck=False, cache=True, inline='always')
@@ -463,7 +496,7 @@ def _reconstruct_alignment(
 
     return align1, align2
 
-
+@nb.njit
 def _validate_gotoh_arguments(
         substitution_alphabet: Optional[str],
         substitution_matrix: Optional[np.ndarray],
@@ -489,9 +522,14 @@ def _validate_gotoh_arguments(
                 substitution_matrix[i, i] = match
     else:
         # Ensure substitution_matrix is of type int8 and C contiguous
-        substitution_matrix = substitution_matrix.astype(np.int8, copy=False)
-        if not substitution_matrix.flags['C_CONTIGUOUS']:
-            substitution_matrix = np.ascontiguousarray(substitution_matrix)
+        # substitution_matrix = substitution_matrix.astype(np.int8, copy=False)
+        substitution_matrix = np.asarray(substitution_matrix, dtype=np.int8)
+
+        # if not substitution_matrix.flags['C_CONTIGUOUS']:
+        #     substitution_matrix = np.ascontiguousarray(substitution_matrix)
+        if not substitution_matrix.flags.c_contiguous:
+            # 处理非连续数组
+            substitution_matrix =  np.ascontiguousarray(substitution_matrix)
 
     if gap_opening is None:
         gap_opening = default_gap_opening
@@ -553,7 +591,7 @@ def needleman_wunsch_gotoh_alignment(
     )
     return align1, align2, int(scores[-1, -1])
 
-
+@nb.njit
 def needleman_wunsch_gotoh_score_opm(
         str1: str,
         str2: str,
@@ -585,6 +623,44 @@ def needleman_wunsch_gotoh_score_opm(
     )
 
     return int(score)
+
+
+@nb.njit
+def saligner(target, query):
+    alphabet = "ACDEFGHIKLMNPQRSTVWYX"
+    substitutions = np.array([
+        [6  , -3 , 1, 2, 3, -2, -2, -7, -3, -3, -10, -5, -1, 1, -4, -7, -5, -6, 0, -2, 0],
+        [-3 , 6  , -2, -8, -5, -4, -4, -12, -13, 1, -14, 0, 0, 1, -1, 0, -8, 1, -7, -9, 0],
+        [1  , -2 , 4, -3, 0, 1, 1, -3, -5, -4, -5, -2, 1, -1, -1, -4, -2, -3, -2, -2, 0],
+        [2  , -8 , -3, 9, -2, -7, -4, -12, -10, -7, -17, -8, -6, -3, -8, -10, -10, -13, -6, -3, 0],
+        [3  , -5 , 0, -2, 7, -3, -3, -5, 1, -3, -9, -5, -2, 2, -5, -8, -3, -7, 4, -4, 0],
+        [-2 , -4 , 1, -7, -3, 6, 3, 0, -7, -7, -1, -2, -2, -4, 3, -3, 4, -6, -4, -2, 0],
+        [-2 , -4 , 1, -4, -3, 3, 6, -4, -7, -6, -6, 0, -1, -3, 1, -3, -1, -5, -5, 3, 0],
+        [-7 , -12, -3, -12, -5, 0, -4, 8, -5, -11, 7, -7, -6, -6, -3, -9, 6, -12, -5, -8, 0],
+        [-3 , -13, -5, -10, 1, -7, -7, -5, 9, -11, -8, -12, -6, -5, -9, -14, -5, -15, 5, -8, 0],
+        [-3 , 1, -4, -7, -3, -7, -6, -11, -11, 6, -16, -3, -2, 2, -4, -4, -9, 0, -8, -9, 0],
+        [10 , -14, -5, -17, -9, -1, -6, 7, -8, -16, 10, -9, -9, -10, -5, -10, 3, -16, -6, -9, 0],
+        [-5 , 0, -2, -8, -5, -2, 0, -7, -12, -3, -9, 7, 0, -2, 2, 3, -4, 0, -8, -5, 0],
+        [-1 , 0, 1, -6, -2, -2, -1, -6, -6, -2, -9, 0, 4, 0, 0, -2, -4, 0, -4, -5, 0],
+        [1  , 1, -1, -3, 2, -4, -3, -6, -5, 2, -10, -2, 0, 5, -2, -4, -5, -1, -2, -5, 0],
+        [-4 , -1, -1, -8, -5, 3, 1, -3, -9, -4, -5, 2, 0, -2, 6, 2, 0, -1, -6, -3, 0],
+        [-7 , 0, -4, -10, -8, -3, -3, -9, -14, -4, -10, 3, -2, -4, 2, 6, -6, 0, -11, -9, 0],
+        [-5 , -8, -2, -10, -3, 4, -1, 6, -5, -9, 3, -4, -4, -5, 0, -6, 8, -9, -5, -5, 0],
+        [-6 , 1, -3, -13, -7, -6, -5, -12, -15, 0, -16, 0, 0, -1, -1, 0, -9, 3, -10, -11, 0],
+        [0  , -7, -2, -6, 4, -4, -5, -5, 5, -8, -6, -8, -4, -2, -6, -11, -5, -10, 8, -6, 0],
+        [-2 , -9, -2, -3, -4, -2, 3, -8, -8, -9, -9, -5, -5, -5, -3, -9, -5, -11, -6, 9, 0],
+        [0  , 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.int8)
+
+    score = needleman_wunsch_gotoh_score_opm(
+        target, query,
+        substitution_alphabet=alphabet,
+        substitution_matrix=substitutions,
+        gap_opening=-10,
+        gap_extension=-1)
+
+
+    return score
+
 
 
 def smith_waterman_gotoh_alignment(
@@ -799,5 +875,42 @@ def main():
     print("Score:      ", score)
 
 
+def saligner(target, query):
+    alphabet = "ACDEFGHIKLMNPQRSTVWYX"
+    substitutions = np.array([
+        [6  , -3 , 1, 2, 3, -2, -2, -7, -3, -3, -10, -5, -1, 1, -4, -7, -5, -6, 0, -2, 0],
+        [-3 , 6  , -2, -8, -5, -4, -4, -12, -13, 1, -14, 0, 0, 1, -1, 0, -8, 1, -7, -9, 0],
+        [1  , -2 , 4, -3, 0, 1, 1, -3, -5, -4, -5, -2, 1, -1, -1, -4, -2, -3, -2, -2, 0],
+        [2  , -8 , -3, 9, -2, -7, -4, -12, -10, -7, -17, -8, -6, -3, -8, -10, -10, -13, -6, -3, 0],
+        [3  , -5 , 0, -2, 7, -3, -3, -5, 1, -3, -9, -5, -2, 2, -5, -8, -3, -7, 4, -4, 0],
+        [-2 , -4 , 1, -7, -3, 6, 3, 0, -7, -7, -1, -2, -2, -4, 3, -3, 4, -6, -4, -2, 0],
+        [-2 , -4 , 1, -4, -3, 3, 6, -4, -7, -6, -6, 0, -1, -3, 1, -3, -1, -5, -5, 3, 0],
+        [-7 , -12, -3, -12, -5, 0, -4, 8, -5, -11, 7, -7, -6, -6, -3, -9, 6, -12, -5, -8, 0],
+        [-3 , -13, -5, -10, 1, -7, -7, -5, 9, -11, -8, -12, -6, -5, -9, -14, -5, -15, 5, -8, 0],
+        [-3 , 1, -4, -7, -3, -7, -6, -11, -11, 6, -16, -3, -2, 2, -4, -4, -9, 0, -8, -9, 0],
+        [10 , -14, -5, -17, -9, -1, -6, 7, -8, -16, 10, -9, -9, -10, -5, -10, 3, -16, -6, -9, 0],
+        [-5 , 0, -2, -8, -5, -2, 0, -7, -12, -3, -9, 7, 0, -2, 2, 3, -4, 0, -8, -5, 0],
+        [-1 , 0, 1, -6, -2, -2, -1, -6, -6, -2, -9, 0, 4, 0, 0, -2, -4, 0, -4, -5, 0],
+        [1  , 1, -1, -3, 2, -4, -3, -6, -5, 2, -10, -2, 0, 5, -2, -4, -5, -1, -2, -5, 0],
+        [-4 , -1, -1, -8, -5, 3, 1, -3, -9, -4, -5, 2, 0, -2, 6, 2, 0, -1, -6, -3, 0],
+        [-7 , 0, -4, -10, -8, -3, -3, -9, -14, -4, -10, 3, -2, -4, 2, 6, -6, 0, -11, -9, 0],
+        [-5 , -8, -2, -10, -3, 4, -1, 6, -5, -9, 3, -4, -4, -5, 0, -6, 8, -9, -5, -5, 0],
+        [-6 , 1, -3, -13, -7, -6, -5, -12, -15, 0, -16, 0, 0, -1, -1, 0, -9, 3, -10, -11, 0],
+        [0  , -7, -2, -6, 4, -4, -5, -5, 5, -8, -6, -8, -4, -2, -6, -11, -5, -10, 8, -6, 0],
+        [-2 , -9, -2, -3, -4, -2, 3, -8, -8, -9, -9, -5, -5, -5, -3, -9, -5, -11, -6, 9, 0],
+        [0  , 0 , 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.int8)
+
+    score = needleman_wunsch_gotoh_score_opm(
+        target, query,
+        substitution_alphabet=alphabet,
+        substitution_matrix=substitutions,
+        gap_opening=-10,
+        gap_extension=-1)
+
+
+    return score
+
+
 if __name__ == "__main__":
     main()
+
