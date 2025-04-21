@@ -93,7 +93,8 @@ Referring to the memory consumption in the "benchmark," you can almost run SSAli
 
 ## Benckmark
 
-We provide all the raw data for the benckmark, which you can download at 【原始资料的链接】.
+We provide all the raw data for the benckmark, which you can download at `ftp://bioinfo.isyslab.info:6004`.
+username:`anonymous`,no password.
 
 ### Time Benckmark
 
@@ -247,3 +248,5 @@ In our benchmark, the selected thresholds are shown in the table below.
 | **prefilter_threshold** | 0.2 | 0.3 | 0.45 | 0.6 | 0.7 |
 
 For the **IndexIVFPQ** index, with `prefilter_target=2000`, we recommend using a threshold of **500**, which achieves a balance between speed and accuracy.
+
+
