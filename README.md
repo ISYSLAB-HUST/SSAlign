@@ -1,12 +1,8 @@
 # SSAlign
-
-
-
 SSAlign is an ultra-fast and highly sensitive protein search tool capable of identifying the most similar proteins from large databases. By leveraging protein language models to deeply represent the amino acid sequences and structural information of proteins, and utilizing multi-GPU and multi-process capabilities, SSAlign achieves rapid simultaneous searches for multiple query proteins through a two-stage efficient alignment process. Through extensive comparisons with existing tools such as Foldseek and TM-align, we have demonstrated that SSAlign outperforms these methods in both speed and sensitivity, even surpassing Foldseek by 2 to 3 orders of magnitude, while delivering results comparable to state-of-the-art structural alignment tools.
 
 ## Publications
 
-文章地址
 # Table of Contents
 - [Overview](#overview)
 - [Installation](#installation)
@@ -22,8 +18,6 @@ SSAlign is an ultra-fast and highly sensitive protein search tool capable of id
 - [Index Select](#index-select)
   - [Index File Size and Search Time](#index-file-size-and-search-time)
   - [Prefilter_Threshold](#prefilter-threshold)
-
-
 
 
 ## Overview
@@ -111,22 +105,13 @@ We randomly selected 1,000 query proteins(filenames_without_extension.txt) and p
 | SSAlign --dim 128 | 400.7877838611603 | 25GB |
 | SSAlign --dim 64 | 400.1236891379811 | 25GB |
 
-For more details, you can refer to the paper/supplementary materials: 【原始资料的链接/论文地址】.
+For more details, you can refer to the paper/supplementary materials.
 
 ### Performance Benckmark
 
 The code can be referenced from SiwssProt/* and Scope40/*.
 
-The following two figures demonstrate the superiority of SSAlign on the SwissProt and SCOPe40 datasets.For more details, you can refer to the paper/supplementary materials: 【原始资料的链接/论文地址】.
-<div align="center">
-  <img src="figure/avg_tmscore_gtalign_avg_tmscore_100000_1000.png" alt="Siwss-Prot benckmark" width="50%" />
-</div>
-The benchmark on the Swiss-Prot dataset includes 100 query proteins and 542,378 database entries. Show the results of the five methods, sorted by the avg_tmscore obtained from TM-align, with the cumulative avg_tmscore and RMSD plotted against the top-ranked protein pairs.
-<div align="center">
-  <img src="figure/AOC_Superfamily.png" alt="SCOPe40 benckmark" />
-</div>
-All-to-many search test on the SCOPe40 dataset. For identification at the family and superfamily levels, true positives (TP) are defined as proteins belonging to the same family or the same superfamily but different families, respectively. Hits from different folds are considered false positives (FP).
-
+The following two figures demonstrate the superiority of SSAlign on the SwissProt and SCOPe40 datasets.For more details, you can refer to the paper/supplementary materials.
 ## Database
 
 We have provided processing results for three protein databases: Swiss-Prot, SCOPe40, and afdb50.For example,
