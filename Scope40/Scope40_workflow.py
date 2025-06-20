@@ -9,10 +9,6 @@ import pandas as pd
 
 """
 
-三种工具的运行
-
-全队全搜索，
-
 """
 
 def tmalign_workflow():
@@ -53,7 +49,6 @@ def foldseek_workflow():
     exec_foldseek_easy_search_para(foldseek, '../data/foldseekDB/Scope40DB/DB/scope40DB', basenames, output_directory,
                                    9.5, 10, 1000)
 
-    # 添加tmalign计算过的指标
     for basename in basenames:
         foldseek_file = f"../data/pdb/Scope40/foldseek/{basename}_foldseek"
 
@@ -101,14 +96,13 @@ def SSAlign_prefilter_workflow(dim,gpu_id):
     for i, query_vector in enumerate(query_vectors):
         # basename = query_filenames[i].replace(".cif","")
 
-        basename = os.path.basename(query_filenames[i])  # 提取文件名
+        basename = os.path.basename(query_filenames[i])  # 
 
-        query_vector = query_vector.reshape(1, -1)  # 保持查询向量为二维
+        query_vector = query_vector.reshape(1, -1)  # 
 
         faiss_align_vector(index, all_filenames, query_vector, 8000,f"../data/result/Scope40/SSAlign/SVD{dim}/{basename}.result")
 
 
-    # 添加tmalign计算过的指标
     for basename in basenames:
         faiss_file = f"../data/result/Scope40/SSAlign/SVD{dim}/{basename}.result"
 
@@ -140,7 +134,7 @@ def SSAlign_SAligner_workflow(dim,topk):
         prefix_path = "../data/pdb/Scope40/"
         fullname_list = df_sorted['File1'].apply(lambda x: prefix_path + x).tolist()
 
-        # 查询他们的序列
+        # 
         target_squeue_data, sequence_data = load_squeue(fullname_list,f'../data/pdb/Scope4/{basename}', 'lower')
 
         target_sequence = next(iter(target_squeue_data.values()))
@@ -168,13 +162,12 @@ def SSAlign_SAligner_workflow(dim,topk):
                 "Cosine_Similarity": cosine_Similarity,
                 "Score": result["Score"]
             })
-            # 将结果写入 CSV
         df_results = pd.DataFrame(comparison_results)
 
         csv_output_path = f"../data/result/Scope40/SSAlign/SVD{dim}bio_{basename}_lower_global.csv"
 
 
-        # 保存到 CSV 文件
+        # 
         df_results.to_csv(csv_output_path, index=False)
 
 
@@ -188,18 +181,13 @@ def SSAlign_SAligner_workflow(dim,topk):
 def ssalign(dim,basename,faiss_topk,cos_threshold,final_number):
     file_path = f"../data/result/Scope40/SSAlign/SVD{dim}/bio_{basename}_lower_global.csv"
 
-    # 1. 先预过滤出来 faiss_topk个
     df = pd.read_csv(file_path).sort_values(by='Cosine_Similarity',ascending=False).head(faiss_topk)
 
-    # 2. 然后选出大于阈值的
     df_first = df[df['Cosine_Similarity'] >= cos_threshold]
 
-    # 如果第一步的个数已经足够了，那就直接返回
     if len(df_first) >= final_number:
         df_all = df_first.sort_values(by='Cosine_Similarity',ascending=False).head(final_number)
     else:
-        # 反之，进行第二步
-        # 3. 小于阈值的，进行第二步，使用bio得分来筛选
         df_less = df[df['Cosine_Similarity'] < cos_threshold]
         #
         df_second = df_less.sort_values(by='Score',ascending=False).head(final_number-len(df_first))
