@@ -33,7 +33,6 @@ def find_lookup(basename):
                 return result
 
 def get_scop_levels(scopecode):
-    # 将 SCOP 层级分解为不同层级（例如：'a.1.1.1' -> ['a', 'a.1', 'a.1.1', 'a.1.1.1']）
     levels = scopecode.split('.')
     return {
         "class": levels[0],
@@ -48,7 +47,6 @@ def group_files_by_family(basename):
 
     df = pd.read_csv(tsv_file, sep='\t', header=None, names=['File', 'SCOP_Level'])
 
-    # 找到 basename 对应的 superfamily
     file_scop_level = df[df['File'] == basename]['SCOP_Level']
 
     if file_scop_level.empty:
@@ -59,12 +57,10 @@ def group_files_by_family(basename):
 
     # print(superfamily)
 
-    # 筛选所有同一 superfamily 的文件
     same_family_files = []
 
     for index, row in df.iterrows():
         current_scop = get_scop_levels(row['SCOP_Level'])
-        # 比较 superfamily 层级
         if current_scop['family'] == family:
             same_family_files.append(row['File'])
 
@@ -83,16 +79,14 @@ def group_files_by_superfamily(basename):
             return []
 
     file_scop = get_scop_levels(file_scop_level.iloc[0])
-    family = file_scop['family']  # 获取 superfamily 层级
+    family = file_scop['family']  
 
     # print(superfamily)
 
-    # 筛选所有同一 superfamily 的文件
     same_superfamily_files = []
 
     for index, row in df.iterrows():
         current_scop = get_scop_levels(row['SCOP_Level'])
-        # 比较 superfamily 层级
         if current_scop['family'] == family:
             same_superfamily_files.append(row['File'])
 
@@ -102,25 +96,20 @@ def group_files_by_superfamily(basename):
 def group_same_fold_files(basename):
 
     tsv_file = "scop_lookup.fix.tsv"
-    # 读取 TSV 文件
     df = pd.read_csv(tsv_file, sep='\t', header=None, names=['File', 'SCOP_Level'])
 
-    # 找到 basename 对应的 SCOP 层级
     file_scop_level = df[df['File'] == basename]['SCOP_Level']
 
     if file_scop_level.empty:
         return []
 
-    # 获取该文件的 SCOP 层级，并提取折叠层级
     file_scop = get_scop_levels(file_scop_level.iloc[0])
     fold = file_scop['fold']  # 获取 fold 层级
 
-    # 筛选所有同一 fold 的文件
     same_fold_files = []
 
     for index, row in df.iterrows():
         current_scop = get_scop_levels(row['SCOP_Level'])
-        # 比较 fold 层级
         if current_scop['fold'] == fold:
             same_fold_files.append(row['File'])
 
@@ -136,7 +125,6 @@ def PR_foldseek(basenames,mode):
 
     for basename in basenames:
 
-        # 同一超家族 ---- 正确TP
         if mode == 'family':
             same_superfamily_files = group_files_by_family(basename)
         if mode == 'superfamily':
@@ -160,11 +148,10 @@ def PR_foldseek(basenames,mode):
         TP = 0
 
         count = 0
-        # 每一个都判断，更新 recall 和  precision
         for index, row in df_foldseek.iterrows():
             count += 1
             file1 = row['File1']  #
-            if file1 in same_superfamily_files:  # 查询到的同一超家族，那就是正确
+            if file1 in same_superfamily_files:  
                 TP += 1
 
             recall.append(TP/all_right)
@@ -192,11 +179,10 @@ def PR_ssalign(basenames,dim,cos_threshold,mode):
 
         TP = 0
         count = 0
-        # 每一个都判断，更新 recall 和  precision
         for index, row in df_ssalign.iterrows():
             count += 1
             file1 = row['File1']  #
-            if file1 in same_superfamily_files:  # 查询到的同一超家族，那就是正确
+            if file1 in same_superfamily_files: 
                 TP += 1
 
             recall.append(TP / all_right)
@@ -235,7 +221,7 @@ def PR_tmalign(basenames,mode):
 
         for index, row in df_tmalign_sorted.iterrows():
             count += 1
-            File1 = row['File1']  # 假设 'File1' 是列名，根据需要调整
+            File1 = row['File1']  
             file1 = os.path.basename(File1)
             if file1 in same_superfamily_files:
                 TP += 1
@@ -287,32 +273,28 @@ def PR_prefilter(basenames,dim,topk,mode):
 
 
 def calculate_average_recall_precision(all_recall, all_precision):
-    # 找到最大长度
+
     max_length = max(len(recall) for recall in all_recall)
 
-    # 对 recall 和 precision 列表进行填充
     padded_recall = []
     for recall in all_recall:
-        # 复制原始列表
         padded = recall.copy()
-        # 计算需要填充的数量
+
         while len(padded) < max_length:
-            padded.append(padded[-1])  # 用最后一个值填充
+            padded.append(padded[-1])  # 
         padded_recall.append(padded)
 
     padded_precision = []
     for precision in all_precision:
-        # 复制原始列表
         padded = precision.copy()
-        # 计算需要填充的数量
+
         while len(padded) < max_length:
-            padded.append(padded[-1])  # 用最后一个值填充
+            padded.append(padded[-1])  # 
         padded_precision.append(padded)
 
     # print(padded_recall)
     # print(padded_precision)
 
-    # 计算平均值
     avg_recall = np.mean(padded_recall, axis=0)
     avg_precision = np.mean(padded_precision, axis=0)
 
@@ -326,7 +308,6 @@ def benckamrk_main_1(dim,cos_threshold,mode):
         for file in files:
             basenames.append(file)
 
-            # 这13个，foldseek结果为空
     foldseek_empty_files = [
         "d1dpjb_",
         "d2e74d2",
@@ -359,21 +340,19 @@ def benckamrk_main_1(dim,cos_threshold,mode):
     faiss_recall, faiss_precision = PR_prefilter(basenames, dim, 500,mode)
     faiss_avg_recall, faiss_avg_precision = calculate_average_recall_precision(faiss_recall, faiss_precision)
 
-    plt.figure(figsize=(10, 6), dpi=600)  # 设置高分辨率
+    plt.figure(figsize=(10, 6), dpi=600)  # 
 
-    # 绘制折线图
     plt.plot(foldseek_avg_recall, foldseek_avg_precision, color='green', label='Foldseek ', linewidth=1)
     plt.plot(ssalign_avg_recall, ssalign_avg_precision, color='blue', label='SSAlign ', linewidth=1)
     plt.plot(tmalign_avg_recall, tmalign_avg_precision, color='red', label='Tmalign ', linewidth=1)
     plt.plot(faiss_avg_recall, faiss_avg_precision, color='orange', label='ssalign-prefilter-500 ', linewidth=1)
 
-    # 添加标签、标题和图例
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Family', fontsize=14)
-    plt.legend(loc='best', fontsize=12, frameon=True)  # 设置图例位置为最优，添加边框
+    plt.legend(loc='best', fontsize=12, frameon=True)  
 
-    plt.tight_layout()  # 自动调整布局避免文字被截断
+    plt.tight_layout()  
     plt.savefig(f"PR_{mode}.png",dpi=600)
     plt.legend()
     plt.close()
@@ -390,37 +369,32 @@ def firstFP_foldseek(basenames,query_fraction,mode):
 
     for basename in basenames:
 
-        # 同一超家族 ---- 正确TP
         if mode == 'family':
             same_superfamily_files = group_files_by_family(basename)
         if mode == 'superfamily':
             same_superfamily_files = group_files_by_superfamily(basename)
-        # 同一折叠
+
         same_fold_files = group_same_fold_files(basename)
 
         #  File1,File2,TM-Score1,TM-Score2,Aligned Length,RMSD,Seq_ID,FoldSeek_Metrics
         foldseek_file_path = f"../data/result/Scope40/foldseek/{basename}.result"
         df_foldseek = pd.read_csv(foldseek_file_path)
 
-        # 取出 前 query_fraction 比例
         df_foldseek_fraction = df_foldseek.head(int(len(df_foldseek)*query_fraction))
 
 
-        TP = [] #  TP,   同一超家族中的匹配项是正确的
-        FP = []  # FP    不同折叠之间的匹配是错误的
+        TP = []
+        FP = []  
 
-        # 有几个foldseek是无法查询的
         if len(df_foldseek_fraction) == 0:
             sum_sen += 0
         else:
-            # 只选出是同一个折叠的！
             for index, row in df_foldseek_fraction.iterrows():
-                file1 = row['File1']  # 假设 'File1' 是列名，根据需要调整
-                if file1 not in same_fold_files: # 查询到的不是同一折叠的 ，直接退出了，只算这之前的数据。所以一定是同一个折叠
+                file1 = row['File1']
+                if file1 not in same_fold_files: 
 
-                    break # 遇到第一个就直接退出 1st FP。写在这里还是前面？
-                # 那么下面就全是同一个折叠的
-                if file1 in same_superfamily_files: # 查询到的同一超家族，TP
+                    break 
+                if file1 in same_superfamily_files: # ，TP
                     TP.append(file1)
                 else:
                     FP.append(file1)
@@ -446,7 +420,6 @@ def firstFP_ssalign(basenames,dim,cos_threshold,query_fraction,mode):
             same_superfamily_files = group_files_by_family(basename)
         if mode == 'superfamily':
             same_superfamily_files = group_files_by_superfamily(basename)
-        # 同一折叠
         same_fold_files = group_same_fold_files(basename)
 
         # ssalign(dim,basename,faiss_topk,cos_threshold,final_number)
@@ -456,16 +429,16 @@ def firstFP_ssalign(basenames,dim,cos_threshold,query_fraction,mode):
         df_ssalign_fraction = df_ssalign.head(int(len(df_ssalign)*query_fraction))
 
 
-        TP = [] #  TP,   同一超家族中的匹配项是正确的
-        FP = []  # FP    不同折叠之间的匹配是错误的
+        TP = [] #  TP,   
+        FP = []  # FP    
 
-        # 只选出是同一个折叠的！
+        # ！
         for index, row in df_ssalign_fraction.iterrows():
-            file1 = row['File1']  # 假设 'File1' 是列名，根据需要调整
-            if file1 not in same_fold_files: # 查询到的不是同一折叠的 ，直接退出了，只算这之前的数据。所以一定是同一个折叠
-                break # 遇到第一个就直接退出 1st FP。写在这里还是前面？
-            # 那么下面就全是同一个折叠的
-            if file1 in same_superfamily_files: # 查询到的同一超家族，TP
+            file1 = row['File1']  # 
+            if file1 not in same_fold_files: 
+                break # 
+            # 
+            if file1 in same_superfamily_files: # ，TP
                 TP.append(file1)
             else:
                 FP.append(file1)
