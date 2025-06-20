@@ -4,27 +4,25 @@ import os
 
 
 dim = 512
-cosine_threshold = 0.3  # 相似度阈
+cosine_threshold = 0.3  # 
 
 dim = 256
-cosine_threshold = 0.45  # 相似度阈
+cosine_threshold = 0.45  # 
 
 dim = 128
-cosine_threshold = 0.6  # 相似度阈
+cosine_threshold = 0.6  # 
 
 dim = 64
-cosine_threshold = 0.7  # 相似度阈
+cosine_threshold = 0.7  # 
 
-# 配置参数
-input_dir = f"/data2/zxc_data/foldseek_database/foldseek_database/Scope40/gitdata/SSAlign/SVD{dim}"
-output_file = f"scope40_svd{dim}_cos_greater_{cosine_threshold}.csv"  # 最终输出文件
+# 
+input_dir = f"../gitdata/SSAlign/SVD{dim}"
+output_file = f"scope40_svd{dim}_cos_greater_{cosine_threshold}.csv"  # 
 
-# 获取所有 .result 文件
 csv_files = glob.glob(os.path.join(input_dir, "*.result"))
 
-# 处理所有CSV文件并合并结果
 with open(output_file, 'w', newline='') as outfile:
-    writer = None  # CSV writer对象稍后初始化
+    writer = None  # 
     files_processed = 0
     
     for csv_file in csv_files:
@@ -32,13 +30,12 @@ with open(output_file, 'w', newline='') as outfile:
             with open(csv_file, 'r') as infile:
                 reader = csv.DictReader(infile)
                 
-                # 如果是第一个文件，初始化writer
                 if writer is None:
                     fieldnames = ['File1', 'File2', 'Cosine_Similarity', 'Avg_TM_Score']
                     writer = csv.DictWriter(outfile, fieldnames=fieldnames)
                     writer.writeheader()
                 
-                # 处理当前文件
+                # 
                 rows_processed = 0
                 for row in reader:
                     try:
@@ -64,5 +61,3 @@ with open(output_file, 'w', newline='') as outfile:
         except Exception as e:
             print(f"处理文件 {csv_file} 时出错: {e}")
 
-print(f"\n处理完成！已处理 {files_processed}/{len(csv_files)} 个文件")
-print(f"结果已保存到 {output_file}")
