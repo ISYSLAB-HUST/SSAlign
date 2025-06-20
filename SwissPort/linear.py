@@ -6,32 +6,32 @@ import csv
 
 if __name__=="__main__":
 
-    input_list_file = "/data2/zxc_data/foldseek_database/foldseek_database/sp_cif_file/gitdata/SSAlign/SVD1280/100filenames.txt"
+    input_list_file = "../swissport/gitdata/SSAlign/SVD1280/100filenames.txt"
    
     dim = 512
-    cosine_threshold = 0.3  # 相似度阈
+    cosine_threshold = 0.3  # 
 
     dim = 256
-    cosine_threshold = 0.45  # 相似度阈
+    cosine_threshold = 0.45  # 
 
     dim = 128
-    cosine_threshold = 0.6  # 相似度阈
+    cosine_threshold = 0.6  # 
 
     dim = 64
-    cosine_threshold = 0.7  # 相似度阈
+    cosine_threshold = 0.7  # 
     
-    # 配置参数
-    output_file = f'svd{dim}_cos_greater_{cosine_threshold}.csv'  # 最终输出文件
+    # 
+    output_file = f'svd{dim}_cos_greater_{cosine_threshold}.csv'  # 
 
-    # 读取文件名列表
+    # 
     with open(input_list_file, 'r') as f:
         csv_files = [f"/data2/zxc_data/foldseek_database/foldseek_database/sp_cif_file/gitdata/SSAlign/SVD{dim}/{line.strip()}.result" for line in f if line.strip()]
     
    
 
-    # 处理所有CSV文件并合并结果
+    # 
     with open(output_file, 'w', newline='') as outfile:
-        writer = None  # CSV writer对象稍后初始化
+        writer = None  # 
         files_processed = 0
 
         for csv_file in csv_files:
@@ -39,13 +39,11 @@ if __name__=="__main__":
                 with open(csv_file, 'r') as infile:
                     reader = csv.DictReader(infile)
     
-                    # 如果是第一个文件，初始化writer
                     if writer is None:
                         fieldnames = ['File1', 'File2', 'Cosine_Similarity', 'Avg_TM_Score']
                         writer = csv.DictWriter(outfile, fieldnames=fieldnames)
                         writer.writeheader()
     
-                    # 处理当前文件
                     rows_processed = 0
                     for row in reader:
                         try:
@@ -69,5 +67,3 @@ if __name__=="__main__":
             except Exception as e:
                 print(f"处理文件 {csv_file} 时出错: {e}")
         
-    print(f"\n处理完成！已处理 {files_processed}/{len(csv_files)} 个文件")
-    print(f"结果已保存到 {output_file}")
