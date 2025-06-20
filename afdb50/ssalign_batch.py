@@ -16,16 +16,16 @@ from concurrent.futures import ProcessPoolExecutor
 
 # 常量定义
 FOLDSEEK_PATH = "../bin/foldseek"
-SAPROT_MODEL_PATH = "/home/xuchaozhang/ssalign/ssalign/SaprotProject/models/SaProt_650M_AF2.pt"
+SAPROT_MODEL_PATH = "./ssalign/ssalign/SaprotProject/models/SaProt_650M_AF2.pt"
 CUDA_DEVICE = "cuda:1"
-MU_FILENAME = "/home/xuchaozhang/ssalign/ssalign/SaprotProject/Saprot/SaProt/whitening/data2/zxc_data/afdb50_combined_fasta/whitening/whitening_mu.npy"
-W_FILENAME = "/home/xuchaozhang/ssalign/ssalign/SaprotProject/Saprot/SaProt/whitening/data2/zxc_data/afdb50_combined_fasta/whitening/whitening_W.npy"
+MU_FILENAME = "./ssalign/ssalign/SaprotProject/Saprot/SaProt/whitening/data2/zxc_data/afdb50_combined_fasta/whitening/whitening_mu.npy"
+W_FILENAME = "./ssalign/ssalign/SaprotProject/Saprot/SaProt/whitening/data2/zxc_data/afdb50_combined_fasta/whitening/whitening_W.npy"
 LOOKUP_FILE = './ssalign_afdb50_combined_seq.lookup'
 INDEX_FILE = './ssalign_afdb50_combined_seq.index'
 SEQ_FILE = './ssalign_afdb50_combined_seq'
 
 def generate_3di_sequences(file_full_path_list):
-    """生成3Di序列"""
+    """"""
     foldseek_seqs = {}
     for file_full_path in file_full_path_list:
         parsed_seqs = get_struc_seq(FOLDSEEK_PATH, file_full_path, plddt_mask=False)
@@ -36,7 +36,7 @@ def generate_3di_sequences(file_full_path_list):
 def generate_saprot_embeddings(file_full_path_list,cuda_device,batch_size = 20):
 
     time1 = time.time()
-    """使用SaProt生成蛋白质嵌入"""
+    """"""
     model, alphabet = load_esm_saprot(SAPROT_MODEL_PATH)
     model = model.to(cuda_device)
     batch_converter = alphabet.get_batch_converter()
@@ -44,18 +44,18 @@ def generate_saprot_embeddings(file_full_path_list,cuda_device,batch_size = 20):
     time2 = time.time()
     print(f"模型加载，耗费时间：{time2 - time1}")
 
-    """ 上面是模型加载花费时间 """
+    """  """
 
     # foldseek_seqs = generate_3di_sequences(file_full_path_list)
 
-    # 3di 序列生成
+    # 
     foldseek_seqs = {}
     for file_full_path in file_full_path_list:
         parsed_seqs = get_struc_seq(FOLDSEEK_PATH, file_full_path, plddt_mask=False)
         key, (seq, foldseek_seq, combined_seq) = next(iter(parsed_seqs.items()))
         foldseek_seqs[file_full_path] = (foldseek_seq, combined_seq)
 
-    # 批量生成嵌入
+    # 
     data = [(file_full_path, foldseek_seqs[file_full_path][1]) for file_full_path in file_full_path_list]
 
     for batch_start in range(0, len(data), batch_size):
@@ -91,7 +91,6 @@ def generate_saprot_embeddings(file_full_path_list,cuda_device,batch_size = 20):
 
 
 def load_mu_and_W():
-    """加载白化所需的均值和矩阵"""
     mu = np.load(MU_FILENAME)
     W = np.load(W_FILENAME)
     return mu, W
@@ -108,11 +107,10 @@ def apply_whitening(mu,W,foldseek_seqs):
     return foldseek_seqs
 
 def search_faiss(index, dim, query_vectors, prefilter_target):
-    """使用FAISS进行相似性搜索"""
     
     #index = faiss.read_index(faiss_file)
     
-    #res = faiss.StandardGpuResources()  # 默认GPU资源
+    #res = faiss.StandardGpuResources()  # 
     #gpu_id = 1
     #index = faiss.index_cpu_to_gpu(res,gpu_id,index)
 
@@ -133,7 +131,6 @@ def run_saligner(query_squeue, prefilter_threshold, max_target, prefilter_result
     
     # time1 = time.time()
 
-    """运行Saligner进行序列比对"""
 
     df_prefilter = pd.DataFrame(prefilter_results_pdb, columns=["Protein_Name", "prefilter_score"])
     
@@ -162,7 +159,6 @@ def run_saligner(query_squeue, prefilter_threshold, max_target, prefilter_result
     time3 = time.time()
     # print(f"SAligner比对完毕了,cost: {time3-time2}")
 
-    # 将结果转为DataFrame
     df_saligner = pd.DataFrame(saligner_result, columns=["Protein_Name", "prefilter_score", "saligner_score"])
     df_saligner_sorted = df_saligner.sort_values(by="saligner_score", ascending=False).head(max_target - prefilter_threshold)
     final_df = pd.concat([df_prefilter_sorted, df_saligner_sorted], ignore_index=True)
@@ -185,7 +181,7 @@ def process_file(i, file_full_path, foldseek_seqs, prefilter_threshold, max_targ
 
 def process_chunk(mu, W, foldseek_seqs, chunk_keys):
     """处理一个数据块"""
-    chunk = {key: foldseek_seqs[key] for key in chunk_keys}  # 直接从 foldseek_seqs 中提取子字典
+    chunk = {key: foldseek_seqs[key] for key in chunk_keys}  # 
     return apply_whitening(mu, W, chunk)
 
 
@@ -208,14 +204,13 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
 
     print(f"参数解析 ，花费 : {time1 - time0}")
 
-    # 从 lookup 文件获取蛋白质名
     lookup_dict = {}
     with open(LOOKUP_FILE, 'r') as lookup_file:
         for line in lookup_file:
             seq_num, name = line.strip().split('\t')
             lookup_dict[int(seq_num)] = name
 
-    # 从 index 文件获取序列的起始和结束位置
+    #
     index_dict = {}
     with open(INDEX_FILE, 'r') as index_file:
         for line in index_file:
@@ -238,20 +233,17 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
 
     start_time = time.time()
 
-    # 生成SaProt嵌入
     # foldseek_seqs = generate_saprot_embeddings(file_full_path_list)
     avg_len = len(file_full_path_list) // num_gpus
     file_parts = [file_full_path_list[i * avg_len:(i + 1) * avg_len] for i in range(num_gpus)]
     with ProcessPoolExecutor(max_workers=num_gpus) as executor:
         futures = []
         for i in range(num_gpus):
-            cuda_device = f'cuda:{i}'  # 分配到不同的 GPU
+            cuda_device = f'cuda:{i}'  #  GPU
             futures.append(executor.submit(generate_saprot_embeddings, file_parts[i], cuda_device))
 
-        # 获取所有的结果
         results = [future.result() for future in futures]
 
-        # 合并所有 GPU 的结果
     foldseek_seqs = {}
     for result in results:
         foldseek_seqs.update(result)
@@ -259,7 +251,7 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
 
     time3 = time.time()
 
-    # 白化处理
+    # erm
 
     whitened_foldseek_seqs = apply_whitening(mu, W,foldseek_seqs)
 
@@ -267,14 +259,14 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
     #chunk_size = len(keys) // num_processes
     #chunks = [keys[i:i + chunk_size] for i in range(0, len(keys), chunk_size)]
 
-    # 使用多进程处理
+    
     #with multiprocessing.Pool(processes=num_processes) as pool:
     #    results = pool.starmap(
     #        process_chunk,
     #        [(mu, W, foldseek_seqs, chunk) for chunk in chunks]
     #    )
 
-    # 合并结果
+    
     #whitened_foldseek_seqs = {}
     #for result in results:
     #    whitened_foldseek_seqs.update(result)
@@ -284,14 +276,14 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
 
     print(f"Whitening applied.cost:{time4 - time3})")
 
-    # 准备FAISS查询向量
+    # 
     query_vectors = np.array([whitened_embedding.flatten() for _, (_, whitened_embedding) in whitened_foldseek_seqs.items()]).astype(np.float32)
    # print(f"Query vectors shape: {query_vectors.shape}")
 
     #query_vectors = np.ascontiguousarray(query_vectors)
     #print(f"Query vectors shape: {query_vectors.shape}")
 
-    # FAISS搜索
+    # 
     distances, indices = search_faiss(index, dim, query_vectors, prefilter_target)
     
 
@@ -310,11 +302,8 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
     timea = time.time()
     print(f"查询相关信息 : {timea - time5}")
 
-    """
-    下面使用多线程
-    """
+    
     with multiprocessing.Pool(processes=num_processes) as pool:
-        # 使用enumerate来传递每个文件的索引和路径
         pool.starmap(process_file, [(i, file_full_path, foldseek_seqs, prefilter_threshold, max_target,all_prefilter_results_pdb[i], all_saligner_pdb[i])
                                     for i, file_full_path in enumerate(file_full_path_list)])
 
@@ -336,7 +325,7 @@ def main(query_pdb_name_list, dim, prefilter_target, prefilter_threshold, max_ta
     print(f"总共花费:{time6 - start_time}")
 
 def parse_list_from_file(file_path):
-    """从文件中读取文件名列表"""
+    
     with open(file_path, 'r') as f:
         return [line.strip() for line in f if line.strip()]
 
