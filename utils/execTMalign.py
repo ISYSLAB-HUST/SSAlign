@@ -12,20 +12,16 @@ AF-P85334-F1-model_v4
 AF-P17536-F1-model_v4
 AF-P85096-F1-model_v4
 
-这六个文件使用foldseek搜索不到
 
 """
-# 设置 TMalign 可执行文件的路径
 tm_align_exec = "../bin/TMalign_cpp"
 
 
 def extract_key_info(output):
-    """
-    提取 TMalign 输出中的关键信息。
-    """
+    
     key_info = ""
 
-    # 使用正则表达式匹配并提取关键信息
+    # 
     chain_1 = re.search(r"Name of Chain_1: .+", output)
     chain_2 = re.search(r"Name of Chain_2: .+", output)
     length_chain_1 = re.search(r"Length of Chain_1: \d+ residues", output)
@@ -35,7 +31,7 @@ def extract_key_info(output):
     tm_score_2 = re.search(r"TM-score= [\d.]+ \(if normalized by length of Chain_2", output)
     recommendation = re.search(r"\(You should use TM-score normalized by length of the reference structure\)", output)
 
-    # 将匹配的内容拼接成字符串
+    # 
     if chain_1:
         key_info += chain_1.group(0) + "\n"
     if chain_2:
@@ -57,11 +53,7 @@ def extract_key_info(output):
 
 
 def compare_with_target(directory, target_file, output_file):
-    """
-    与目标文件比对目录中的所有文件，并将关键信息写入输出文件。
-    """
-
-    # 获取目录中的所有结构文件
+    
     structure_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".cif")]
 
 
@@ -84,32 +76,30 @@ def compare_with_target(directory, target_file, output_file):
 def sort_Talign_chain(input_file_path,output_file_path):
     results = []
 
-    # 逐行读取文件并解析内容
+    
     with open(input_file_path, 'r') as f:
-        # 一次性读取10行
+       
         while True:
-            # 读取每一组比对结果
+            #
             lines = [f.readline() for _ in range(10)]
             if not lines[0]:
-                break  # 文件结束
+                break 
 
             try:
-                # 提取文件名
+               
                 file1 = re.search(r'比对文件: (.*?) 和', lines[0]).group(1)
                 file2 = re.search(r' 和 (.*?)\n', lines[0]).group(1)
 
-                # 提取对齐长度、RMSD、序列相似性
+               
                 aligned_length = int(re.search(r'Aligned length= (\d+)', lines[5]).group(1))
                 rmsd = float(re.search(r'RMSD= +([\d.]+)', lines[5]).group(1))
                 seq_id = float(re.search(r'Seq_ID=n_identical/n_aligned= ([\d.]+)', lines[5]).group(1))
 
-                # 提取 TM-score（按 Chain_1 和 Chain_2 标准化）
                 tm_score_1 = float(
                     re.search(r'TM-score= ([\d.]+) \(if normalized by length of Chain_1', lines[6]).group(1))
                 tm_score_2 = float(
                     re.search(r'TM-score= ([\d.]+) \(if normalized by length of Chain_2', lines[7]).group(1))
 
-                # 保存结果
                 results.append({
                     "File1": file1,
                     "File2": file2,
@@ -120,10 +110,8 @@ def sort_Talign_chain(input_file_path,output_file_path):
                     "Seq_ID": seq_id
                 })
             except Exception as e:
-                # 跳过解析失败的比对结果
                 print(f"解析以下结果时出错，已跳过：{lines}\n错误：{e}")
-    #
-        # 转换为 DataFrame 并写入 CSV 文件
+    
         df = pd.DataFrame(results)
         df.to_csv(output_file_path, index=False)
 
