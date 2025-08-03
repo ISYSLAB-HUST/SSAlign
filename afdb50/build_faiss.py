@@ -1,14 +1,12 @@
 import faiss
 import numpy as np
 import glob
-import ast  # 解析字符串为列表
+import ast  #
 import os
-import json  # 用于存储蛋白质名称
+import json  # 
 import logging
 import argparse
 
-
-# 配置索引参数
 def create_faiss_index(dim, index_type, index_path, name_path, batch_size=100000, nlist=100, m=16, nbits=8):
     """
     Create a Faiss index, 
