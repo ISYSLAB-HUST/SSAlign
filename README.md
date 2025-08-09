@@ -19,11 +19,11 @@ SSAlign is an ultra-fast and highly sensitive protein search tool capable of id
   - [Index File Size and Search Time](#index-file-size-and-search-time)
   - [Prefilter_Threshold](#prefilter-threshold)
 - [Examples of SSAlign workflow](#examples-of-ssalign-workflow)
-  - [Convert protein structure into structure-aware sequence](#convert-protein-structure-into-structure-aware-sequence)
-  - [Obtain initial embeddings using the Saport model](#[obtain-initial-embeddings-using-th-saport-model)
-  - [ERM](#erm)
-  - [Build faiss index](#build-faiss-index)
-  - [SSAlign](#ssalign)
+  - [1.Convert protein structure into structure-aware sequence](#1convert-protein-structure-into-structure-aware-sequence)
+  - [2.Obtain initial embeddings using the Saport model](#2obtain-initial-embeddings-using-the-saport-model)
+  - [3.ERM](#3erm)
+  - [4.Build faiss index](#4build-faiss-index)
+  - [5.Run SSAlign](#5run-ssalign)
 
 
 ## Overview
@@ -305,7 +305,7 @@ You should use the ERM module to correct the original embedding. Refer to whiten
 Once you have obtained the embedded representations, you can now use them to build the complete faiss index file and database file. Refer to
 `afdb50/build_faiss.py` and `afdb50/build_indexDB.py`. You can adjust the dimension parameters according to your needs.
 
-### 5.SSAlign
+### 5.Run SSAlign
 ```python
 python ssalign_batch.py --query_file_list_file filenames_without_extension.txt --dim 1280
  --prefilter_target 2000 --prefilter_threshold 500 --max_target 1000 --num_processes 64 --num_gpus 2
