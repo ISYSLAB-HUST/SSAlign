@@ -18,6 +18,12 @@ SSAlign is an ultra-fast and highly sensitive protein search tool capable of id
 - [Index Select](#index-select)
   - [Index File Size and Search Time](#index-file-size-and-search-time)
   - [Prefilter_Threshold](#prefilter-threshold)
+- [Examples of SSAlign workflow](#examples-of-ssalign-workflow)
+  - [Convert protein structure into structure-aware sequence](#convert-protein-structure-into-structure-aware-sequence)
+  - [Obtain initial embeddings using the Saport model](#[obtain-initial-embeddings-using-th-saport-model)
+  - [ERM](#erm)
+  - [Build faiss index](#build-faiss-index)
+  - [SSAlign](#ssalign)
 
 
 ## Overview
@@ -234,4 +240,74 @@ In our benchmark, the selected thresholds are shown in the table below.
 
 For the **IndexIVFPQ** index, with `prefilter_target=2000`, we recommend using a threshold of **500**, which achieves a balance between speed and accuracy.
 
+## Examples of SSAlign workflow
 
+### 1.Convert protein structure into structure-aware sequence
+```python
+from utils.foldseek_util import get_struc_seq
+pdb_path = "example/8ac8.cif"
+
+parsed_seqs = get_struc_seq("bin/foldseek", pdb_path, ["A"], plddt_mask=False)["A"]
+seq, foldseek_seq, combined_seq = parsed_seqs
+
+print(f"seq: {seq}")
+print(f"foldseek_seq: {foldseek_seq}")
+print(f"combined_seq: {combined_seq}")
+```
+If you are using a database that has already been built with foldseek, you can easily obtain a structure-aware sequence by following the steps below. Take afdb50 as an example.
+```python
+foldseek createsubdb accession_list afdb50 afdb50_subset --id-mode 1
+foldseek convert2fasta afdb50_subset afdb50_subset.fasta
+foldseek createsubdb accession_list afdb50_ss afdb50_subset_ss --id-mode 1
+foldseek lndb afdb50_h afdb50_subset_ss_h
+foldseek convert2fasta afdb50_subset_ss afdb50_ss.fasta
+```
+
+### 2.Obtain initial embeddings using the Saport model
+You can refer to SwissPort(SCOPe40)/processDB.py
+```python
+from utils.foldseek_util import get_struc_seq
+from utils.esm_loader import load_esm_saprot
+import torch
+import numpy as np
+
+Saport_model_path = "../models/SaProt_650M_AF2.pt"
+
+cuda_device = "cuda:6"
+
+model, alphabet = load_esm_saprot(Saport_model_path)
+model = model.to(cuda_device)
+batch_converter = alphabet.get_batch_converter()def combined_seq_to_vector(file_full_path, combined_seq):
+    """
+    Use Saprot to convert the combined_seq sequence into a vector representation.
+    """
+    data = [(file_full_path, combined_seq)]
+    torch.set_printoptions(sci_mode=False, threshold=5000)
+    batch_labels, batch_strs, batch_tokens = batch_converter(data)
+    with torch.no_grad():  
+        batch_tokens = batch_tokens.to(cuda_device)
+        results = model(batch_tokens, repr_layers=[33], return_contacts=False)
+    token_representations = results["representations"][33][:, 1:-1, :].mean(1)
+    np.set_printoptions(suppress=True, threshold=5000) 
+    return token_representations.cpu().numpy()
+```
+### 3.ERM
+Now you have converted it into fasta format. For example
+```fasta
+>AF-A2SSV1-F1-model_v4
+[0.121312331,0.9837,...]
+>AF-P54855-F1-model_v4
+[0.931213,0.21239,...]
+```
+You should use the ERM module to correct the original embedding. Refer to whitening/afdb50fasta_whiteing.py for details.
+
+### 4.Build faiss index
+Once you have obtained the embedded representations, you can now use them to build the complete faiss index file and database file. Refer to
+`afdb50/build_faiss.py` and `afdb50/build_indexDB.py`. You can adjust the dimension parameters according to your needs.
+
+### 5.SSAlign
+```python
+python ssalign_batch.py --query_file_list_file filenames_without_extension.txt --dim 1280
+ --prefilter_target 2000 --prefilter_threshold 500 --max_target 1000 --num_processes 64 --num_gpus 2
+```
+You can modify the paths of the relevant files in ssalign_batch.py to suit your own needs.
