@@ -1,6 +1,3 @@
-我把你现有 README 里的信息（安装、Quick start、参数表、硬件配置、Numba 编译、Faiss 多 GPU、prefilter_threshold 解释、三套 benchmark 流程等）重新组织成更清晰的英文结构版。  
-
----
 
 # SSAlign
 
@@ -380,3 +377,4 @@ AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those searc
 * Folder/script names are kept consistent with your current repository layout (e.g., `SwissPort/`, `SiwssPprt/`), even if they contain typos, to avoid breaking existing paths.
 
 ---
+
