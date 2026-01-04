@@ -1,0 +1,1 @@
+download SaProt_650M_AF2.pt here(https://huggingface.co/westlake-repl/SaProt_650M_AF2)
