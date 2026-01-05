@@ -32,10 +32,11 @@ SSAlign is an ultra-fast and highly sensitive protein search tool designed to re
 * [Multi-GPU Faiss Sharding](#multi-gpu-faiss-sharding)
 * [Prefilter Threshold](#prefilter-threshold)
 * [Benchmark](#benchmark)
-
+  * 
   * [SwissProt Benchmark](#swissprot-benchmark)
   * [SCOPe40 Benchmark](#scope40-benchmark)
   * [AFDB50 Benchmark](#afdb50-benchmark)
+  * [Dataset Download](#dataset-download)
 
 ---
 
@@ -62,7 +63,6 @@ conda activate SSAlign
 ### Web Server
 
 * Submit jobs directly at: `http://bioinfo.isyslab.info/ssalign/search/`
-* Download SSAlignDB and benchmark intermediates at: `http://bioinfo.isyslab.info/ssalign/download/section/ssalign/`
 
 ### Prepare Files for Local Runs
 
@@ -125,16 +125,14 @@ Download or generate required intermediate files:
 | Option                   | Description                                                                                                                                                                           |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--query_file_list_file` | A file containing the list of query protein names.                                                                                                                                    |
-| `--dim`                  | Embedding dimension. Lower dims reduce memory. Supported: `1280, 512, 256, 128, 64` (default: `1280`).                                                                                |
 | `--prefilter_target`     | Number of candidates selected in SSAlign-prefilter stage (default: `2000`). Larger → slower.                                                                                          |
 | `--prefilter_threshold`  | Number of results returned directly from the prefilter stage without SAligner refinement (default: `500`). Must be ≤ `prefilter_target` and ≤ `max_target`. May depend on index type. |
 | `--max_target`           | Final number of returned targets per query (default: `1000`). Must be ≤ candidates from prefilter stage.                                                                              |
 | `--num_processes`        | Number of CPU processes (default: `64`).                                                                                                                                              |
-| `--num_gpus`             | Number of GPUs (default: `2`). CPU-only is supported.                                                                                                                                 |
 
 ---
 
-## System Requirements
+## Benchmark Environment
 
 All tests were run on a server with:
 
@@ -326,12 +324,9 @@ python AFDB50_SSAlign_timebechmark.py \
 
 | tool | cost time(CPU) | cost time(GPU) |
 | --- |----------------|----------------|
-| foldseek easy-search | 325081s        | 325081s        |
-| SSAlign --dim 1280 | 2715.98s       | \              |
-| SSAlign --dim 512 | \              | \              |
-| SSAlign --dim 256 | \              | \              |
-| SSAlign --dim 128 | \              | \              |
-| SSAlign --dim 64 | \              | \              |
+| foldseek easy-search | 325081s        | \      |
+| SSAlign | 2715.98s       | \              |
+
 4. Generate SSAlign-prefilter results:
 
    * run with: `--mode 0 --prefilter_target 2000 --max_target 2000`
@@ -369,6 +364,10 @@ python AFDB50_SSAlign_timebechmark.py \
 | ssalign_prefilter_2000_except_foldseek |         1366.61 |             1265.95 |             0.68 |           850.34 |          2.68 |       3483.55 |         85033.86 |     348354.71 |                0.67 |             2.75 |
 
 ---
+
+### Dataset Download
+* Download SSAlignDB and benchmark intermediates at: `http://bioinfo.isyslab.info/ssalign/download/section/ssalign/`
+
 ### SSAlign accurately detects simple fold proteins missed by Foldseek
 AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those search result you can also find in benchmark
 
@@ -377,4 +376,5 @@ AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those searc
 * Folder/script names are kept consistent with your current repository layout (e.g., `SwissPort/`, `SiwssPprt/`), even if they contain typos, to avoid breaking existing paths.
 
 ---
+
 
