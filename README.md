@@ -372,11 +372,9 @@ python AFDB50_SSAlign_timebechmark.py \
 ### SSAlign accurately detects simple fold proteins missed by Foldseek
 AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those search result you can also find in benchmark
 
-## Notes
-
-* Folder/script names are kept consistent with your current repository layout (e.g., `SwissProt/`, `SiwssPprt/`), even if they contain typos, to avoid breaking existing paths.
 
 ---
+
 
 
 
