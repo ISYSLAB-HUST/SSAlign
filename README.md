@@ -91,13 +91,13 @@ Download or generate required intermediate files:
 
    * Place downloaded SSAlignDB under:
 
-     * `models/SSAlignDB/SwissPort` *(folder name follows your repo scripts)*
+     * `models/SSAlignDB/SwissProt` *(folder name follows your repo scripts)*
 
 5. **Generate databases locally (alternative)**
 
    * SwissProt / SCOPe40:
 
-     * `SwissPort/processDB.py`
+     * `SwissProt/processDB.py`
      * `SCOPe40/processDB.py`
    * AFDB50:
 
@@ -230,27 +230,27 @@ Benchmark intermediates can be downloaded from:
    * output → `../benchmarkData/SwissProt/foldseek`
 3. SSAlign / SSAlign-prefilter:
 
-   * `SwissPort.benchmark_SSAlign_result.main`
+   * `SwissProt.benchmark_SSAlign_result.main`
    * output → `../benchmarkData/SwissProt/SSAlign/SVD{dim}/ssalign`
      and `../benchmarkData/SwissProt/SSAlign/SVD{dim}/ssalign_prefilter`
 4. Overlap comparison:
 
-   * `SwissPort/benchmark_overlap.py`
+   * `SwissProt/benchmark_overlap.py`
    * output → `../benchmarkData/SwissProt/benchmark`
 5. Cumulative score prep (NPZ):
 
-   * `SwissPort/benchmark_cumsum_score.py`
+   * `SwissProt/benchmark_cumsum_score.py`
    * output → `../benchmarkData/SwissProt/cumsumNpz`
 6. Plot figures:
 
-   * `SwissPort/benchmark_plot.py`
+   * `SwissProt/benchmark_plot.py`
    * output → `../benchmarkData/SwissProt/benchmark`
 7. Recommended `prefilter_threshold` figure:
 
-   * `SwissPort/cosine_threshold.py`
+   * `SwissProt/cosine_threshold.py`
 8. SS-Score trainer:
 
-   * `SwissPort/LinearModel.py`
+   * `SwissProt/LinearModel.py`
 
 ### SCOPe40 Benchmark
 
@@ -374,9 +374,10 @@ AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those searc
 
 ## Notes
 
-* Folder/script names are kept consistent with your current repository layout (e.g., `SwissPort/`, `SiwssPprt/`), even if they contain typos, to avoid breaking existing paths.
+* Folder/script names are kept consistent with your current repository layout (e.g., `SwissProt/`, `SiwssPprt/`), even if they contain typos, to avoid breaking existing paths.
 
 ---
+
 
 
 
