@@ -4,18 +4,16 @@ import faiss
 import os
 from utils.foldseek_util import get_struc_seq
 from utils.esm_loader import load_esm_saprot
-
+import argparse
 import pandas as pd
 from concurrent.futures import ProcessPoolExecutor
-
+import sys
 
 FOLDSEEK_PATH = "../bin/foldseek"
 SAPROT_MODEL_PATH = "../models/SaProt_650M_AF2.pt"
-CUDA_DEVICE = "cuda:1"
 
 Scope40_MU_FILENAME = "../models/SSAlignDB/SCOPe40/SCOPe40_whitening_mu.npy"
 Scope40_W_FILENAME = "../models/SSAlignDB/SCOPe40/SCOPe40_whitening_W.npy"
-Scope40_faiss_index_file = "../models/SSAlignDB/SCOPe40/SCOPe40_IndexFlatIP_faiss.index"
 Scope40_id_seqs_file = "../models/SSAlignDB/SCOPe40/SCOPe40_id_Seq.npz"
 
 
@@ -28,9 +26,9 @@ def generate_3di_sequences(pdb_list):
     return foldseek_seqs
 
 
-def generate_saprot_embeddings_gpu(pdb_list):
+def generate_saprot_embeddings_gpu(pdb_list,cuda_device):
     model, alphabet = load_esm_saprot(SAPROT_MODEL_PATH)
-    model = model.to(CUDA_DEVICE)
+    model = model.to(cuda_device)
     batch_converter = alphabet.get_batch_converter()
 
     foldseek_seqs = generate_3di_sequences(pdb_list)
@@ -40,7 +38,7 @@ def generate_saprot_embeddings_gpu(pdb_list):
     batch_lens = (batch_tokens != alphabet.padding_idx).sum(1)
 
     with torch.no_grad():
-        batch_tokens = batch_tokens.to(CUDA_DEVICE)
+        batch_tokens = batch_tokens.to(cuda_device)
         results = model(batch_tokens, repr_layers=[33], return_contacts=False)
 
     token_representations = results["representations"][33]
@@ -78,7 +76,7 @@ def generate_saprot_embeddings_cpu(pdb_list):
     return foldseek_seqs
 
 
-def generate_saprot_embeddings(pdb_list):
+def generate_saprot_embeddings(pdb_list,cuda_device):
     """
     First try running SaProt on GPU, fall back to CPU if needed.
     """
@@ -87,7 +85,7 @@ def generate_saprot_embeddings(pdb_list):
         return generate_saprot_embeddings_cpu(pdb_list)
 
     try:
-        print(f"[SaProt] Using GPU device: {CUDA_DEVICE}")
+        print(f"[SaProt] Using GPU device: {cuda_device}")
         return generate_saprot_embeddings_gpu(pdb_list)
     except RuntimeError as e:
         msg = str(e).lower()
@@ -119,9 +117,7 @@ def apply_whitening(foldseek_seqs):
 
 
 def search_faiss(index, dim, query_vectors, prefilter_target):
-    res = faiss.StandardGpuResources()
-    gpu_id = 0
-    index = faiss.index_cpu_to_gpu(res, gpu_id, index)
+
 
     q = np.asarray(query_vectors, dtype=np.float32)
 
@@ -203,7 +199,9 @@ def runSAligner(threshold: float, prefilter_rows: list[dict], n_proc: int = 64) 
     return df_final
 
 
-def runSSAlign_cmd(pdb_list, cos_threshold, prefilter_topk, final_number, n_proc: int = 64) -> pd.DataFrame:
+def runSSAlign_cmd(pdb_list,mode, prefilter_mode, prefilter_threshold, prefilter_target, cuda_device,max_target,out_dir,dim=512, n_proc: int = 64) -> pd.DataFrame:
+
+    Scope40_faiss_index_file = f"../models/SSAlignDB/SCOPe40/SCOPe40_IndexFlatIP_{dim}_faiss.index"
     """
     For each query PDB:
     - Run prefilter (FAISS) + SAligner re-ranking
@@ -213,7 +211,7 @@ def runSSAlign_cmd(pdb_list, cos_threshold, prefilter_topk, final_number, n_proc
     Returns:
     - A single DataFrame that concatenates all queries' top-N results.
     """
-    foldseek_seqs = generate_saprot_embeddings(pdb_list)
+    foldseek_seqs = generate_saprot_embeddings(pdb_list,cuda_device)
     foldseek_seqs = apply_whitening(foldseek_seqs)
 
     query_embs = []
@@ -226,13 +224,25 @@ def runSSAlign_cmd(pdb_list, cos_threshold, prefilter_topk, final_number, n_proc
         raise FileNotFoundError(f"Scope FAISS index file not found: {Scope40_faiss_index_file}")
 
     index = faiss.read_index(Scope40_faiss_index_file)
+    if prefilter_mode == "gpu":
+        # faiss-gpu 才会有这些接口
+        if not hasattr(faiss, "get_num_gpus") or faiss.get_num_gpus() <= 0:
+            raise RuntimeError("prefilter_mode=gpu but FAISS GPU is not available (faiss-gpu not installed or no GPU).")
+        ngpu = faiss.get_num_gpus()
+        gpu_resources = [faiss.StandardGpuResources() for _ in range(ngpu)]
+        co = faiss.GpuMultipleClonerOptions()
+        co.shard = True  # 多 GPU 分片
+        # move CPU index -> multi GPU
+        index = faiss.index_cpu_to_gpu_multiple_py(gpu_resources, index, co)
+    if index.d != dim:
+        raise ValueError(f"--dim={dim} but index.d={index.d}. Must match for IndexFlatIP.")
     dim = index.d
 
     distances, indices = search_faiss(
         index=index,
         dim=dim,
         query_vectors=query_vectors,
-        prefilter_target=prefilter_topk,
+        prefilter_target=prefilter_target,
     )
 
     target_ids, target_seqs = _load_id_seq_mapping(Scope40_id_seqs_file)
@@ -261,15 +271,20 @@ def runSSAlign_cmd(pdb_list, cos_threshold, prefilter_topk, final_number, n_proc
                 }
             )
 
-        result_df = runSAligner(cos_threshold, prefilter_rows, n_proc=n_proc)
+        if mode == 0:
+            final_df = pd.DataFrame(prefilter_rows)
+            result_df = final_df[["query_pdb", "target_id", "prefilter_score"]]
+        else:
+            final_df = runSAligner(prefilter_threshold, prefilter_rows, n_proc=n_proc)
+            result_df = final_df[["query_pdb", "target_id", "prefilter_score", "Score"]]
 
         # Keep your original SS_score logic as-is 
-        result_df["SS_score"] = 0.25 * result_df["prefilter_score"] + 1.63
+        result_df["SS_score"] = 0.59 * result_df["prefilter_score"] + 0.42
 
-        top_hits_df = result_df.head(final_number).reset_index(drop=True)
+        top_hits_df = result_df.head(max_target).reset_index(drop=True)
 
         out_name = f"{query_pdb}.ssalign"
-        top_hits_df.to_csv(out_name, index=False)
+        top_hits_df.to_csv(f"{out_dir}/{out_name}", index=False)
         print(f"[Saved] {out_name}  rows={len(top_hits_df)}")
 
         all_top_dfs.append(top_hits_df)
@@ -279,18 +294,65 @@ def runSSAlign_cmd(pdb_list, cos_threshold, prefilter_topk, final_number, n_proc
     return pd.DataFrame()
 
 
-if __name__ == "__main__":
-    # Simple test (fill in your PDB paths or identifiers)
-    test_pdbs = [
-        "../pdbData/pdb/SCOPe40/d12asa_",
-        "../pdbData/pdb/SCOPe40/d16vpa_"
-    ]
+def main():
+    ap = argparse.ArgumentParser(description="SSAlign two-stage: score<threshold -> saligner refine.")
+
+    ap.add_argument("--querypdbs", required=True, help="Comma-separated list of query PDB files")
+    ap.add_argument("--dim", type=int, default=512)  # 必须等于 index.d
+    ap.add_argument("--prefilter_target",type=int, default=1000)  # FAISS topK
+    ap.add_argument("--prefilter_threshold", type=float,default=0.3)  # 分数阈值（例如 0.3）
+    ap.add_argument("--max_target", type=int, default=500)  # 最终输出行数（<= prefilter_target）
+    ap.add_argument("--mode", type=int, required=True)  # 0：预过滤/ 1：完整阶段
+    ap.add_argument("--prefilter_mode", type=str, default="cpu", choices=["cpu", "gpu"],
+                    help="FAISS prefilter on CPU or GPU (multi-gpu sharded)")
+    ap.add_argument("--out_dir", required=True)
+
+    ap.add_argument("--nproc", type=int, default=64)
+    ap.add_argument("--cuda_device", default="cuda:0")
+    ap.add_argument("--batch_size", type=int, default=20)
+
+    args = ap.parse_args()
+    if args.mode not in (0, 1):
+        raise ValueError("--mode must be 0 or 1")
+
+    if args.max_target > args.prefilter_target:
+        raise ValueError("max_target must be <= prefilter_target")
+
+    os.makedirs(args.out_dir, exist_ok=True)
+
+    # 将逗号分隔的字符串转换为列表
+    if args.querypdbs:
+        query_pdbs = [p.strip() for p in args.querypdbs.split(',')]
+    else:
+        print("Error: --querypdbs cannot be empty")
+        sys.exit(1)
 
     final_df = runSSAlign_cmd(
-        test_pdbs,
-        cos_threshold=0.2,
-        prefilter_topk=1000,
-        final_number=500,
-        n_proc=64,
+        test_pdbs=query_pdbs,
+        prefilter_threshold=args.prefilter_threshold,
+        mode=args.mode,
+        prefilter_target=args.prefilter_target,
+        max_target=args.max_target,
+        prefilter_mode=args.prefilter_mode,
+        dim=args.dim,
+        n_proc=args.n_proc,
+        out_dir=args.out_dir
     )
+
+if __name__ == "__main__":
+
+    main()
+    """
+    python SiwssProt_SSAlign.py \
+    --querypdbs "../pdbData/pdb/SCOPe40/d12asa_,../pdbData/pdb/SCOPe40/d16vpa_" \
+    --dim 512 \
+    --prefilter_target 2000 \
+    --prefilter_threshold 0.3 \
+    --max_target 1000 \
+    --mode 1 \
+    --prefilter_mode cpu \
+    --out_dir "./results" \
+    --n_proc 64
+    
+    """
 
