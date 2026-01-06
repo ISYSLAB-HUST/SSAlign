@@ -15,7 +15,6 @@ SSAlign is an ultra-fast and highly sensitive protein search tool designed to re
 
 * **Two-stage search**: fast prefilter + refinement alignment.
 * **Scales to very large databases** with multi-GPU / multi-process acceleration.
-* **Flexible embedding dimensions**: 1280 / 512 / 256 / 128 / 64.
 * **Benchmarks included**: SwissProt, SCOPe40, AFDB50.
 
 ## Table of Contents
@@ -27,7 +26,7 @@ SSAlign is an ultra-fast and highly sensitive protein search tool designed to re
   * [Prepare Files for Local Runs](#prepare-files-for-local-runs)
   * [One-Command Runs](#one-command-runs)
 * [Important Search Parameters](#important-search-parameters)
-* [System Requirements](#system-requirements)
+* [Benchmark Environment](#benchmark-environment)
 * [Numba Compiler (SAligner)](#numba-compiler-saligner)
 * [Multi-GPU Faiss Sharding](#multi-gpu-faiss-sharding)
 * [Prefilter Threshold](#prefilter-threshold)
@@ -107,16 +106,10 @@ Download or generate required intermediate files:
      * `AFDB50/AFDB50fasta_whiteing.py`
 
 ### One-Command Runs
-
-* Run SSAlign search on SwissProt:
-
-  * `SiwssPprt/runSSAlign_cmd`
-* Run SSAlign search on SCOPe40:
-
-  * `SCOPe40/runSSAlign_cmd`
-* Run SSAlign benchmark on AFDB50:
-
-  * `AFDB50/AFDB50_SSAalign_benchmark`
+* To run `run_SSAlign.py` and search directly within the corresponding database by specifying the `--db` parameter.Or you can:
+  * Run SSAlign search on SwissProt:`SiwssPort/SiwssPort_SSAlign.py`
+  * Run SSAlign search on SCOPe40:`SCOPe40/SCOPe40_SSAlign.py`
+  * Run SSAlign search on AFDB50:`AFDB50/AFDB50_SSAlign.py`
 
 ---
 
@@ -124,11 +117,17 @@ Download or generate required intermediate files:
 
 | Option                   | Description                                                                                                                                                                           |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--query_file_list_file` | A file containing the list of query protein names.                                                                                                                                    |
-| `--prefilter_target`     | Number of candidates selected in SSAlign-prefilter stage (default: `2000`). Larger → slower.                                                                                          |
-| `--prefilter_threshold`  | Number of results returned directly from the prefilter stage without SAligner refinement (default: `500`). Must be ≤ `prefilter_target` and ≤ `max_target`. May depend on index type. |
-| `--max_target`           | Final number of returned targets per query (default: `1000`). Must be ≤ candidates from prefilter stage.                                                                              |
-| `--num_processes`        | Number of CPU processes (default: `64`).                                                                                                                                              |
+| `--db`                   | Select the database to search. Currently supported: afdb50 | scope40 | swissprot                                                                                                                                  |
+| `--querypdbs`     | Number of candidates selected in SSAlign-prefilter stage (default: `2000`). Larger → slower.                                                                                          |
+| `--prefilter_target`  | Number of candidates to retain in the prefilter stage(default: `2000`). Must be ≤ `prefilter_target` and ≤ `max_target`. May depend on index type. |
+| `--prefilter_threshold`           | Score cutoff for triggering SAligner re-ranking in the prefilter stage(default: `0.3`).  .                                                                         |
+| `--max_target`        |Maximum number of final results returned by the tool (default: `1000`).                                                                                                                                              |
+| `--mode`        | Operation mode: 0 - prefilter only; 1 - full two-stage pipeline.                                                                                                                                              |
+| `--prefilter_mode`        | Execute the FAISS-based prefilter stage on CPU or GPU (sharded across multiple GPUs)(default: `cpu`,choices=["cpu", "gpu"]). .                                                                                                                                              |
+| `--out_dir`        | Output directory for saving search results.                                                                                                                                              |
+| `--nproc`        | Number of parallel threads for the SAligner stage (default: `64`).                                                                                                                                              |
+| `--cuda_device`        | CUDA device identifier for running the SaProt model (e.g., 'cuda:0').                                                                                                                                              |
+| `--batch_size`        | Batch size parameter for the SaProt model inference (default: `20`).                                                                                                                                              |
 
 ---
 
@@ -137,10 +136,9 @@ Download or generate required intermediate files:
 All tests were run on a server with:
 
 * **CPU**: Intel Xeon Gold 6133 × 2 (40 cores / 80 threads), 2.50–3.00 GHz
-* **GPU**: NVIDIA RTX A6000 48GB × 2
+* **GPU**: NVIDIA RTX A6000 48GB × 3
 * **Memory**: 256GB
 
-Based on benchmark memory usage, SSAlign can be run on a personal workstation with sufficient RAM for tens of millions of entries. GPU improves speed but is not strictly required.
 
 ---
 
@@ -204,13 +202,13 @@ index = faiss.index_cpu_to_gpu_multiple_py(gpu_resources, index, co)
 ## Prefilter Threshold
 The `prefilter_threshold` determines the number of results that can be directly returned in the SSAlign-prefilter stage without requiring further filtering by SAligner. For the IndexFlatIP index, we conducted detailed tests across different dimensions. The figure below shows the relationship between accuracy (TM-Score >= 0.5) and recall under different thresholds. A threshold that is too low may lead to a decrease in accuracy, while a threshold that is too high may result in excessive time consumption during the SAligner stage.The figure below shows the impact of selecting different `prefilter_threshold` values on accuracy and recall when the dimensionality is 1280 and the `prefilter_target = 2000`.
 <div align="center">
-  <img src="figure/1280_2000_cosine_threshold.png" alt="cosine_threshold" width="50%" />
+  <img src="figure/512_2000_cosine_threshold.png" alt="cosine_threshold" width="50%" />
 </div>
 In our benchmark, the selected thresholds are shown in the table below.
 
-| dim | 1280 | 512 | 256 | 128 | 64  |
-| --- | --- | --- | --- | --- | --- |
-| **prefilter_threshold** | 0.2 | 0.3 | 0.45 | 0.6 | 0.7 |
+| dim | 1280 | 512 |
+| --- | --- | --- | 
+| **prefilter_threshold** | 0.2 | 0.3 |
 
 
 ---
@@ -322,10 +320,13 @@ python AFDB50_SSAlign_timebechmark.py \
   --nproc 64
 ```
 
-| tool | cost time(CPU) | cost time(GPU) |
+| tool | Execution Time on CPUs(Seconds) | Execution Time on GPUs(Seconds) |
 | --- |----------------|----------------|
-| foldseek easy-search | 325081s        | \      |
-| SSAlign | 2715.98s       | \              |
+| foldseek easy-search | 325081s        | \  |
+| SSAlign(preload)  |  633.53 | * |
+| SSAlign-prefilter  |  1621.5 |  * |
+| SSAlign-SAligner  |  1070.84|  * |
+| SSAlign |  2715.98s | * |
 
 4. Generate SSAlign-prefilter results:
 
@@ -376,5 +377,6 @@ AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those searc
 * Folder/script names are kept consistent with your current repository layout (e.g., `SwissPort/`, `SiwssPprt/`), even if they contain typos, to avoid breaking existing paths.
 
 ---
+
 
 
