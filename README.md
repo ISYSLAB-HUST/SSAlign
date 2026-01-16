@@ -126,8 +126,7 @@ Download or generate required intermediate files:
 | `--prefilter_mode`        | Execute the FAISS-based prefilter stage on CPU or GPU (sharded across multiple GPUs)(default: `cpu`,choices=["cpu", "gpu"]). .                                                                                                                                              |
 | `--out_dir`        | Output directory for saving search results.                                                                                                                                              |
 | `--nproc`        | Number of parallel threads for the SAligner stage (default: `64`).                                                                                                                                              |
-| `--cuda_device`        | CUDA device identifier for running the SaProt model (e.g., 'cuda:0').                                                                                                                                              |
-| `--batch_size`        | Batch size parameter for the SaProt model inference (default: `20`).                                                                                                                                              |
+| `--cuda_device`        | CUDA device identifier for running the SaProt model (e.g., 'cuda:0').                                                                                                                                          |
 
 ---
 
@@ -374,6 +373,7 @@ AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those searc
 
 
 ---
+
 
 
 
