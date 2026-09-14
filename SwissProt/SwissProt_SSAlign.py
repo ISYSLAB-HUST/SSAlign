@@ -283,7 +283,7 @@ def runSSAlign_cmd(pdb_list,mode, prefilter_mode, prefilter_threshold, prefilter
 
 
         # Keep your original SS_score logic as-is
-        result_df["SS_score"] = 0.55 * result_df["prefilter_score"] + 0.56
+        result_df["SS_score"] = 0.69 * result_df["prefilter_score"] + 0.39
 
         top_hits_df = result_df.head(max_target).reset_index(drop=True)
 
