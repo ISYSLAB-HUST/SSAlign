@@ -1,0 +1,6 @@
+# Downloaded SSAlign database artifacts
+models/SSAlignDB/**/*.index
+models/SSAlignDB/**/*.npy
+models/SSAlignDB/**/*.npz
+models/SSAlignDB/**/*.part
+

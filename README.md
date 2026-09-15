@@ -23,6 +23,7 @@ SSAlign is an ultra-fast and highly sensitive protein search tool designed to re
 * [Quick Start](#quick-start)
 
   * [Web Server](#web-server)
+  * [Download a Prebuilt Database](#download-a-prebuilt-database)
   * [Prepare Files for Local Runs](#prepare-files-for-local-runs)
   * [One-Command Runs](#one-command-runs)
 * [Important Search Parameters](#important-search-parameters)
@@ -63,6 +64,25 @@ conda activate SSAlign
 
 * Submit jobs directly at: `http://bioinfo.isyslab.info/ssalign/search/`
 
+### Download a Prebuilt Database
+
+Download the 512-dimensional SwissProt FAISS index with:
+
+```bash
+./scripts/download_ssalign_db.sh swissprot 512
+```
+
+The script downloads approximately 1.03 GiB and installs the index at:
+
+```text
+models/SSAlignDB/SwissProt/SwissProt_IndexFlatIP_512_faiss.index
+```
+
+The download can be resumed if it is interrupted. The script also checks the
+final file size before moving the completed file into place. Run
+`./scripts/download_ssalign_db.sh --help` to see the available database and
+dimension combinations.
+
 ### Prepare Files for Local Runs
 
 Download or generate required intermediate files:
@@ -89,7 +109,8 @@ Download or generate required intermediate files:
 
 4. **SSAlign databases (recommended for local runs)**
 
-   * Place downloaded SSAlignDB under:
+   * Use the download script described above, or place manually downloaded
+     SSAlignDB files under:
 
      * `models/SSAlignDB/SwissProt` *(folder name follows your repo scripts)*
 
@@ -366,7 +387,14 @@ python AFDB50_SSAlign_timebechmark.py \
 ---
 
 ### Dataset Download
-* Download SSAlignDB and benchmark intermediates at: `http://bioinfo.isyslab.info/ssalign/download/section/ssalign/`
+* Install the available prebuilt SwissProt index with:
+
+  ```bash
+  ./scripts/download_ssalign_db.sh swissprot 512
+  ```
+
+* Browse other SSAlignDB files and benchmark intermediates at:
+  `http://bioinfo.isyslab.info/ssalign/download/section/ssalign/`
 
 ### SSAlign accurately detects simple fold proteins missed by Foldseek
 AMPs example,you can see those pdb file in ```pdbData/specialpdb``` ,those search result you can also find in benchmark
