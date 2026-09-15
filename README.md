@@ -66,20 +66,25 @@ conda activate SSAlign
 
 ### Download a Prebuilt Database
 
-Download the 512-dimensional SwissProt FAISS index with:
+Download the complete SwissProt search bundle with a 512-dimensional FAISS
+index:
 
 ```bash
 ./scripts/download_ssalign_db.sh swissprot 512
 ```
 
-The script downloads approximately 1.03 GiB and installs the index at:
+The script downloads approximately 1.43 GiB and installs four files under:
 
 ```text
-models/SSAlignDB/SwissProt/SwissProt_IndexFlatIP_512_faiss.index
+models/SSAlignDB/SwissProt/
 ```
 
-The download can be resumed if it is interrupted. The script also checks the
-final file size before moving the completed file into place. Run
+The bundle contains `SwissProt_IndexFlatIP_512_faiss.index`,
+`SwissProt_id_Seq.npz`, `SwissProt_whitening_W.npy`, and
+`SwissProt_whitening_mu.npy`. These files provide the FAISS index, protein
+ID/3Di-sequence mapping, and whitening transform needed by the SwissProt search
+code. Downloads can be resumed if interrupted, and each file is size-checked
+before installation. Run
 `./scripts/download_ssalign_db.sh --help` to see the available database and
 dimension combinations.
 
@@ -109,7 +114,7 @@ Download or generate required intermediate files:
 
 4. **SSAlign databases (recommended for local runs)**
 
-   * Use the download script described above, or place manually downloaded
+   * Use the download script described above, or place all manually downloaded
      SSAlignDB files under:
 
      * `models/SSAlignDB/SwissProt` *(folder name follows your repo scripts)*
@@ -127,8 +132,8 @@ Download or generate required intermediate files:
      * `AFDB50/AFDB50fasta_whiteing.py`
 
 ### One-Command Runs
-* To run `run_SSAlign.py` and search directly within the corresponding database by specifying the `--db` parameter.Or you can:
-  * Run SSAlign search on SwissProt:`SiwssPort/SiwssPort_SSAlign.py`
+* To run `run_SSAlign.py` and search directly within the corresponding database by specifying the `--db` parameter. Or you can:
+  * Run SSAlign search on SwissProt: `SwissProt/SwissProt_SSAlign.py`
   * Run SSAlign search on SCOPe40:`SCOPe40/SCOPe40_SSAlign.py`
   * Run SSAlign search on AFDB50:`AFDB50/AFDB50_SSAlign.py`
 
@@ -387,7 +392,7 @@ python AFDB50_SSAlign_timebechmark.py \
 ---
 
 ### Dataset Download
-* Install the available prebuilt SwissProt index with:
+* Install the available prebuilt SwissProt database bundle with:
 
   ```bash
   ./scripts/download_ssalign_db.sh swissprot 512

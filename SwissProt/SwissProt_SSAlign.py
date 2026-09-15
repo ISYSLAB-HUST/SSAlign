@@ -13,9 +13,9 @@ import sys
 FOLDSEEK_PATH = "../bin/foldseek"
 SAPROT_MODEL_PATH = "../models/SaProt_650M_AF2.pt"
 
-SwissPort_MU_FILENAME = "../models/SSAlignDB/SwissProt/SwissPort_whitening_mu.npy"
-SwissPort_W_FILENAME = "../models/SSAlignDB/SwissProt/SwissPort_whitening_W.npy"
-SwissPort_id_seqs_file = "../models/SSAlignDB/SwissProt/SwissPort_id_Seq.npz"
+SwissProt_MU_FILENAME = "../models/SSAlignDB/SwissProt/SwissProt_whitening_mu.npy"
+SwissProt_W_FILENAME = "../models/SSAlignDB/SwissProt/SwissProt_whitening_W.npy"
+SwissProt_id_seqs_file = "../models/SSAlignDB/SwissProt/SwissProt_id_Seq.npz"
 
 
 def generate_3di_sequences(pdb_list):
@@ -104,8 +104,8 @@ def apply_whitening(foldseek_seqs):
     """
     Apply whitening transform and L2-normalization to SaProt embeddings.
     """
-    mu = np.load(SwissPort_MU_FILENAME)
-    W = np.load(SwissPort_W_FILENAME)
+    mu = np.load(SwissProt_MU_FILENAME)
+    W = np.load(SwissProt_W_FILENAME)
 
     for pdb, (foldseek_seq, saprot_embedding) in foldseek_seqs.items():
         X_centered = saprot_embedding - mu
@@ -201,7 +201,7 @@ def runSAligner(threshold: float, prefilter_rows: list[dict], n_proc: int = 64) 
 
 def runSSAlign_cmd(pdb_list,mode, prefilter_mode, prefilter_threshold, prefilter_target, cuda_device,max_target,out_dir,dim=512, n_proc: int = 64) -> pd.DataFrame:
 
-    SwissPort_faiss_index_file = f"../models/SSAlignDB/SwissProt/SwissProt_IndexFlatIP_{dim}_faiss.index"
+    SwissProt_faiss_index_file = f"../models/SSAlignDB/SwissProt/SwissProt_IndexFlatIP_{dim}_faiss.index"
 
 
     """
@@ -222,10 +222,10 @@ def runSSAlign_cmd(pdb_list,mode, prefilter_mode, prefilter_threshold, prefilter
         query_embs.append(emb)
     query_vectors = np.stack(query_embs, axis=0)
 
-    if not os.path.exists(SwissPort_faiss_index_file):
-        raise FileNotFoundError(f" FAISS index file not found: {SwissPort_faiss_index_file}")
+    if not os.path.exists(SwissProt_faiss_index_file):
+        raise FileNotFoundError(f" FAISS index file not found: {SwissProt_faiss_index_file}")
 
-    index = faiss.read_index(SwissPort_faiss_index_file)
+    index = faiss.read_index(SwissProt_faiss_index_file)
     if prefilter_mode == "gpu":
         # faiss-gpu 才会有这些接口
         if not hasattr(faiss, "get_num_gpus") or faiss.get_num_gpus() <= 0:
@@ -248,7 +248,7 @@ def runSSAlign_cmd(pdb_list,mode, prefilter_mode, prefilter_threshold, prefilter
         prefilter_target=prefilter_target,
     )
 
-    target_ids, target_seqs = _load_id_seq_mapping(SwissPort_id_seqs_file)
+    target_ids, target_seqs = _load_id_seq_mapping(SwissProt_id_seqs_file)
 
     all_top_dfs = []
 
